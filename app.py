@@ -18,7 +18,7 @@ qualified_teams = [
 
 teams = sorted(qualified_teams)
 
-st.set_page_config(page_title="FIFA Match Winner Predictor",page_icon="⚽", layout="centered")
+st.set_page_config(page_title="FIFA Match Winner Predictor", page_icon="⚽", layout="centered")
 
 st.title("⚽ FIFA Match Winner Predictor")
 
