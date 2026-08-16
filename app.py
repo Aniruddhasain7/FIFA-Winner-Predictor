@@ -11,13 +11,12 @@ model = joblib.load("fifa_match_model.pkl")
 le_team = joblib.load("team_encoder.pkl")
 le_result = joblib.load("result_encoder.pkl")
 
-ranking = pd.read_csv("fifa_ranking_2022-10-06.csv")
-ranking = ranking[["team", "rank", "points"]]
+try:
+    team_stats = joblib.load("team_stats.pkl")
+except Exception:
+    team_stats = {}
 
-
-_ranked_teams  = set(ranking["team"].tolist())
 _encoded_teams = set(le_team.classes_)
-_available     = _ranked_teams & _encoded_teams
 
 _name_map = {
     "South Korea":   "Korea Republic",
@@ -32,7 +31,7 @@ _reverse_map = {v: k for k, v in _name_map.items()}
 
 teams = sorted(
     _reverse_map.get(t, t)
-    for t in _available
+    for t in _encoded_teams
     if t not in {"Cuba", "Angola", "Togo", "Haiti", "Kuwait",
                  "Korea DPR", "El Salvador", "Trinidad and Tobago",
                  "United Arab Emirates", "Israel", "China PR"}
@@ -83,7 +82,6 @@ render_html("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
-/* ── Root Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, [data-testid="stAppViewContainer"] {
@@ -98,7 +96,6 @@ html, body, [data-testid="stAppViewContainer"] {
     min-height: 100vh;
 }
 
-/* Animated background grid */
 [data-testid="stAppViewContainer"]::before {
     content: "";
     position: fixed;
@@ -114,12 +111,10 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stVerticalBlock"] { position: relative; z-index: 1; }
 [data-testid="stHeader"] { background: transparent !important; }
 
-/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #0a0f1e; }
 ::-webkit-scrollbar-thumb { background: linear-gradient(#00d4ff, #7b2fff); border-radius: 3px; }
 
-/* ── Hero Header ── */
 .hero-header {
     text-align: center;
     padding: 3rem 2rem 2.5rem;
@@ -163,7 +158,6 @@ html, body, [data-testid="stAppViewContainer"] {
     letter-spacing: 0.01em;
 }
 
-/* ── Glassmorphism Card ── */
 .glass-card {
     background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
     border: 1px solid rgba(255,255,255,0.08);
@@ -196,7 +190,6 @@ html, body, [data-testid="stAppViewContainer"] {
     background: linear-gradient(90deg, rgba(0,212,255,0.2), transparent);
 }
 
-/* ── VS Divider ── */
 .vs-divider {
     display: flex;
     align-items: center;
@@ -225,7 +218,6 @@ html, body, [data-testid="stAppViewContainer"] {
     box-shadow: 0 0 20px rgba(255,107,53,0.4);
 }
 
-/* ── Stat Pills ── */
 .stat-row {
     display: flex;
     gap: 12px;
@@ -250,7 +242,6 @@ html, body, [data-testid="stAppViewContainer"] {
     font-weight: 700;
 }
 
-/* ── Probability Bars ── */
 .prob-section { margin-top: 0.5rem; }
 .prob-row { margin-bottom: 1.4rem; }
 .prob-header {
@@ -298,7 +289,6 @@ html, body, [data-testid="stAppViewContainer"] {
 .bar-draw  { background: linear-gradient(90deg, #f59e0b, #fbbf24); box-shadow: 0 0 12px rgba(245,158,11,0.5); }
 .bar-team2 { background: linear-gradient(90deg, #7b2fff, #a855f7); box-shadow: 0 0 12px rgba(123,47,255,0.5); }
 
-/* ── Winner Banner ── */
 .winner-banner {
     background: linear-gradient(135deg, rgba(0,212,255,0.12) 0%, rgba(123,47,255,0.12) 100%);
     border: 1px solid rgba(0,212,255,0.25);
@@ -355,7 +345,6 @@ html, body, [data-testid="stAppViewContainer"] {
     z-index: 1;
 }
 
-/* ── Warning ── */
 .custom-warning {
     background: rgba(245,158,11,0.08);
     border: 1px solid rgba(245,158,11,0.25);
@@ -369,7 +358,6 @@ html, body, [data-testid="stAppViewContainer"] {
     gap: 10px;
 }
 
-/* ── Streamlit overrides ── */
 [data-testid="stSelectbox"] label {
     font-family: 'Outfit', sans-serif !important;
     font-size: 0.75rem !important;
@@ -394,7 +382,6 @@ html, body, [data-testid="stAppViewContainer"] {
     box-shadow: 0 0 0 3px rgba(0,212,255,0.08) !important;
 }
 
-/* Button */
 [data-testid="stButton"] > button {
     width: 100% !important;
     background: linear-gradient(135deg, #00d4ff 0%, #0099ff 50%, #7b2fff 100%) !important;
@@ -421,11 +408,9 @@ html, body, [data-testid="stAppViewContainer"] {
     transform: translateY(0) !important;
 }
 
-/* Hide Streamlit branding */
 #MainMenu, footer, [data-testid="stToolbar"] { visibility: hidden !important; }
 [data-testid="stDecoration"] { display: none !important; }
 
-/* Spinner */
 [data-testid="stSpinner"] { color: #00d4ff !important; }
 
 
@@ -490,7 +475,7 @@ render_html("""
         <span class="hero-ball" style="font-size:3rem; line-height:1; filter:drop-shadow(0 0 18px rgba(0,212,255,0.5));">⚽</span>
         <div class="hero-title" style="margin-bottom:0;">FIFA Match Predictor</div>
     </div>
-    <div class="hero-subtitle">Powered by Machine Learning &amp; FIFA Rankings</div>
+    <div class="hero-subtitle">Powered by Machine Learning &amp; Historical World Cup Data</div>
 </div>
 """)
 
@@ -502,9 +487,10 @@ def _resolve(name):
 
 def get_team_stats(team):
     internal = _resolve(team)
-    r = ranking.loc[ranking["team"] == internal, "rank"].values
-    p = ranking.loc[ranking["team"] == internal, "points"].values
-    return (int(r[0]) if len(r) else "N/A", round(float(p[0]), 1) if len(p) else "N/A")
+    stats = team_stats.get(internal, {"win_rate": 0, "avg_goals_scored": 0, "total_matches": 0})
+    wr = f"{stats.get('win_rate', 0)*100:.1f}%"
+    goals = f"{stats.get('avg_goals_scored', 0):.2f}"
+    return (wr, goals)
 
 
 
@@ -546,46 +532,32 @@ predict_clicked = st.button("⚡ Predict Match Outcome")
 def predict_match(t1, t2):
     i1, i2 = _resolve(t1), _resolve(t2)
 
-    rank1   = ranking.loc[ranking["team"] == i1, "rank"].values[0]
-    rank2   = ranking.loc[ranking["team"] == i2, "rank"].values[0]
-    points1 = ranking.loc[ranking["team"] == i1, "points"].values[0]
-    points2 = ranking.loc[ranking["team"] == i2, "points"].values[0]
+    enc1 = le_team.transform([i1])[0]
+    enc2 = le_team.transform([i2])[0]
 
-    if rank1 <= rank2:
-        stronger_int, weaker_int = i1, i2
-        stronger_disp            = t1
-        strong_rank, weak_rank   = rank1, rank2
-        strong_points, weak_pts  = points1, points2
-    else:
-        stronger_int, weaker_int = i2, i1
-        stronger_disp            = t2
-        strong_rank, weak_rank   = rank2, rank1
-        strong_points, weak_pts  = points2, points1
+    s1 = team_stats.get(i1, {"win_rate": 0.33, "avg_goals_scored": 1.0})
+    s2 = team_stats.get(i2, {"win_rate": 0.33, "avg_goals_scored": 1.0})
 
-    rank_diff   = abs(strong_rank - weak_rank)
-    points_diff = abs(strong_points - weak_pts)
-
-    strong_enc = le_team.transform([stronger_int])[0]
-    weak_enc   = le_team.transform([weaker_int])[0]
+    win_rate_diff = s1["win_rate"] - s2["win_rate"]
+    avg_goals_diff = s1["avg_goals_scored"] - s2["avg_goals_scored"]
 
     features = pd.DataFrame([{
-        "home_encoded": strong_enc,
-        "away_encoded": weak_enc,
-        "rank_diff":    rank_diff,
-        "points_diff":  points_diff
+        "home_encoded": enc1,
+        "away_encoded": enc2,
+        "win_rate_diff": win_rate_diff,
+        "avg_goals_diff": avg_goals_diff,
+        "is_home_host": 0,
+        "is_away_host": 0
     }])
 
     probabilities = model.predict_proba(features)[0]
     prob_dict = dict(zip(le_result.classes_, probabilities))
 
-    strong_prob = prob_dict.get("HomeWin", 0) * 100
-    draw_prob   = prob_dict.get("Draw",    0) * 100
-    weak_prob   = prob_dict.get("AwayWin", 0) * 100
+    t1_prob   = prob_dict.get("HomeWin", 0) * 100
+    draw_prob = prob_dict.get("Draw",    0) * 100
+    t2_prob   = prob_dict.get("AwayWin", 0) * 100
 
-    if stronger_disp == t1:
-        return strong_prob, draw_prob, weak_prob
-    else:
-        return weak_prob, draw_prob, strong_prob
+    return t1_prob, draw_prob, t2_prob
 
 
 
@@ -663,7 +635,7 @@ if predict_clicked:
               <div class="winner-label">Predicted Winner</div>
               <div class="winner-name">{winner}</div>
               <div style="color:rgba(255,255,255,0.4); font-size:0.85rem; margin-top:0.5rem; position:relative; z-index:1;">
-                Based on FIFA rankings & historical match data
+                Based on historical World Cup match data
               </div>
             </div>
             """)
