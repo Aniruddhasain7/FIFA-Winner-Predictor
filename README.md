@@ -1,104 +1,105 @@
 # ⚽ FIFA World Cup Match Winner Predictor
 
-An AI-powered web application that predicts the outcome of a football match between two qualified FIFA World Cup teams using historical match statistics and official FIFA rankings. Featuring a modern, high-fidelity glassmorphic user interface.
+An AI-powered web application that predicts the outcome of a match between any two FIFA World Cup teams using historical match performance statistics spanning from 1930 to 2022. Built with a custom, high-fidelity glassmorphic user interface in Streamlit.
 
 ---
 
 ## 🚀 Project Overview
 
-Predicting sports matchups is highly complex due to the dynamic nature of team performance. This application uses a **Random Forest Classifier** trained on historical FIFA World Cup match results spanning from 1930 to 2022, integrated with historical FIFA team rankings, to calculate the probabilities of three distinct outcomes:
+Predicting international football matchups requires modeling team historical trends and objective performance indicators. This application leverages a **Random Forest Classifier** trained on official FIFA World Cup match records (1930–2022) to estimate probabilities across three distinct outcomes:
 
-- **Team 1 Win**
-- **Draw**
-- **Team 2 Win**
+- 🔵 **Team 1 Win**
+- 🟠 **Draw**
+- 🟣 **Team 2 Win**
+
+Neutral-ground assumptions are applied during inference (`is_home_host=0`, `is_away_host=0`) to eliminate subjective home-field bias and evaluate both teams objectively.
 
 ---
 
 ## 🎨 Interactive User Interface
 
-The application features a modern web experience:
+The web dashboard is engineered for visual appeal and seamless interaction:
 
-- **Glassmorphic Cards**: Sleek UI modules designed with custom CSS styling, offering a premium dark-themed interface.
-- **Dynamic Team Flags**: High-quality country flags fetched dynamically from [FlagCDN](https://flagcdn.com/) based on the selected match.
-- **Match Probability Breakdown**: Visual progress bars showing the color-coded probability distribution for Team 1 Win (Blue), Draw (Amber), and Team 2 Win (Purple).
-- **Automated Neutral-Ground Modeling**: Eliminates home-field bias to evaluate both teams objectively.
+- **Glassmorphic Theme**: Dark radial background, neon accents, blurred cards, and custom scrollbars.
+- **Dynamic Team Flags**: Automatic flag fetching via [FlagCDN](https://flagcdn.com/) using ISO team mappings.
+- **Visual Probability Distribution**: Color-coded progress bars displaying percentage breakdown for Team 1 Win, Draw, and Team 2 Win.
+- **Victory Banner**: Dynamic outcome card highlighting the predicted winner with trophy graphics or indicating an even matchup.
 
 ---
 
 ## 📊 Features & System Flow
 
-The workflow of the application from user selection to model inference is visualized below:
+The end-to-end user selection and model inference flow is illustrated below:
 
 ```mermaid
 graph TD
     A[User Selects Team 1 & Team 2] --> B{Are Teams Different?}
     B -- No --> C[Display Selection Warning]
-    B -- Yes --> D[Fetch FIFA Rankings & Points]
-    D --> E[Identify Stronger Team by Rank]
-    E --> F[Calculate Features: Rank Difference & Points Difference]
-    F --> G[Encode Teams using LabelEncoder]
-    G --> H[Create Features DataFrame]
-    H --> I[Execute model.predict_proba]
-    I --> J[Map Probabilities to Team 1, Draw, Team 2]
-    J --> K[Render Glassmorphic Results & Winner Banner]
+    B -- Yes --> D[Fetch Historical Team Stats: Win Rate & Avg Goals]
+    D --> E[Calculate Feature Differences: win_rate_diff & avg_goals_diff]
+    E --> F[Encode Teams via pre-fitted LabelEncoder]
+    F --> G[Construct Features DataFrame]
+    G --> H[Execute model.predict_proba]
+    H --> I[Map Probabilities to Team 1 Win, Draw, Team 2 Win]
+    I --> J[Render Glassmorphic UI & Victory Banner]
 ```
 
 ---
 
 ## 🧠 Machine Learning Pipeline
 
-### 1. Data Engineering & Features
+### 1. Data Engineering & Feature Selection
 
-The model trains on features derived from `all-world-cup-matches.csv`:
+The dataset (`all-world-cup-matches.csv`) contains historical match logs from 1930 through 2022. Feature engineering extracts:
 
-- **home_encoded** / **away_encoded**: Integer encodings of team names using a pre-fitted `LabelEncoder`.
-- **win_rate_diff**: Difference in historical win rates between Team 1 and Team 2.
-- **avg_goals_diff**: Difference in historical average goals scored per match.
-- **is_home_host** / **is_away_host**: Binary indicators for host team advantage.
+- `home_encoded` / `away_encoded`: Categorical integer encodings of team names via a pre-fitted `LabelEncoder`.
+- `win_rate_diff`: Difference in historical World Cup win rates between Team 1 and Team 2.
+- `avg_goals_diff`: Difference in historical average goals scored per match between Team 1 and Team 2.
+- `is_home_host` / `is_away_host`: Host advantage indicators (set to `0` during neutral inference).
 
-### 2. Model Configuration
+### 2. Model Architecture
 
-A **Random Forest Classifier** is chosen for its robust performance against multi-collinearity and ability to capture non-linear relationships:
+A **Random Forest Classifier** was selected for its handling of non-linear relationships, multi-class target handling, and resistance to overfitting:
 
-- `n_estimators`: 300
-- `max_depth`: 12
-- `random_state`: 42
+- **Estimators (`n_estimators`)**: 300
+- **Max Depth (`max_depth`)**: 12
+- **Random State (`random_state`)**: 42
 
-### 3. Model Performance
+### 3. Performance Metrics
 
-Evaluated on a 20% test partition, the model achieves a test accuracy of **~51%** for exact three-class classification (Win/Draw/Loss):
+Evaluated on a 20% test partition (155 matches), the model achieves an overall classification accuracy of **~51%** for exact outcome prediction (HomeWin / Draw / AwayWin):
 
 ```text
               precision    recall  f1-score   support
 
-    AwayWin       0.45      0.23      0.31        39
-       Draw       0.21      0.08      0.12        38
-    HomeWin       0.55      0.86      0.67        78
+     AwayWin       0.45      0.23      0.31        39
+        Draw       0.21      0.08      0.12        38
+     HomeWin       0.55      0.86      0.67        78
 
-   accuracy                           0.51       155
-  macro avg       0.41      0.39      0.36       155
+    accuracy                           0.51       155
+   macro avg       0.41      0.39      0.36       155
 weighted avg       0.44      0.51      0.44       155
 ```
 
 > [!NOTE]
-> Predicting exact draw scenarios in international football is notoriously challenging, leading to lower recall on Draw classifications, while predicting wins yields higher precision and recall due to historical trends.
+> Predicting exact draws in international tournaments is inherently volatile due to low draw frequencies in knockouts, resulting in lower recall for Draws while maintaining strong precision and recall for team victory predictions.
 
 ---
 
 ## 📂 Repository Structure
 
 ```text
-├── assets/                    # UI Screenshots
-│   ├── ss1.png                # Main Selection Interface
-│   └── ss2.png                # Prediction Probabilities
-├── FIFA.ipynb                 # Jupyter Notebook (EDA, training, validation)
-├── app.py                     # Main Streamlit web application
-├── requirements.txt           # Project package dependencies
-├── fifa_match_model.pkl       # Trained Random Forest model
+├── assets/                    # Interface screenshots
+│   ├── ss1.png                # Match selection interface
+│   └── ss2.png                # Probability breakdown & winner display
+├── FIFA.ipynb                 # Jupyter Notebook (EDA, feature engineering, model training)
+├── app.py                     # Streamlit web application & glassmorphic UI engine
+├── requirements.txt           # Python dependency specifications
+├── fifa_match_model.pkl       # Trained Random Forest model binary
 ├── team_encoder.pkl           # Pre-fitted team LabelEncoder
-├── result_encoder.pkl         # Pre-fitted result LabelEncoder
-├── team_stats.pkl             # Pre-calculated team historical statistics
-├── all-world-cup-matches.csv  # Comprehensive historical World Cup match records
+├── result_encoder.pkl         # Pre-fitted match result LabelEncoder
+├── team_stats.pkl             # Pre-computed team historical win rates & goal averages
+├── all-world-cup-matches.csv  # World Cup match dataset (1930–2022)
 └── README.md                  # Project documentation
 ```
 
@@ -108,7 +109,7 @@ weighted avg       0.44      0.51      0.44       155
 
 ### Prerequisites
 
-- Python 3.8 or higher installed on your system.
+- **Python 3.8+** installed.
 
 ### Steps
 
@@ -119,7 +120,7 @@ weighted avg       0.44      0.51      0.44       155
    cd FIFA-World-Cup-Match-Winner-Predictor
    ```
 
-2. **Set Up a Virtual Environment** (Recommended):
+2. **Set Up Virtual Environment**:
 
    ```bash
    python -m venv venv
@@ -135,22 +136,22 @@ weighted avg       0.44      0.51      0.44       155
    pip install -r requirements.txt
    ```
 
-4. **Launch the Streamlit Web App**:
+4. **Run Web Application**:
 
    ```bash
    streamlit run app.py
    ```
 
-5. Open your web browser and navigate to `http://localhost:8501`.
+5. Open your browser at `http://localhost:8501`.
 
 ---
 
 ## 📸 Application Preview
 
-### 📍 Main Interface
+### 📍 Selection Interface
 
 ![Main Interface](assets/ss1.png)
 
-### 📊 Prediction Result
+### 📊 Outcome & Probabilities
 
 ![Prediction Result](assets/ss2.png)
